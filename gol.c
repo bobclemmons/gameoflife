@@ -156,13 +156,11 @@ static void init(const char* pattern) {
 }
 
 int main(int argc, const char* argv[]) {
-    // if (argc < 2) {
-    //     init()
-    //     printf("Usage: %s <pattern>\n", argv[0]);
-    //     exit(1);
-    // }
-    // init(argv[1]);
-    init("test");
+    if (argc < 2) {
+        printf("Usage: %s <pattern>\n", argv[0]);
+        exit(1);
+    }
+    init(argv[1]);
     print_board(current_board);
     printf("\n");
     for (int i = 0; i < 3; ++i) {
