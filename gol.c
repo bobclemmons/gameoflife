@@ -14,11 +14,11 @@
 // Any dead cell with three live neighbors becomes a live cell.
 // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
 
-
+// Game Constants
 enum { 
-    N =8,
-    ALIVE = 1,
-    DEAD = 0
+    N = 8,     // board dimensions
+    ALIVE = 1, // cell value for Alive
+    DEAD = 0   // cell value for Dead
 };
 
 typedef char board_t[N][N]; // Square board excatly 8x8 with toroidal topology
@@ -80,13 +80,14 @@ static void beacon() {
     set_cell(current_board, 4, 4, 1);
 }
 
+#ifdef TESTING
 static void test_board() {
     memset(current_board, 0, sizeof(current_board));
     set_cell(current_board, 0, 0, 1);
     set_cell(current_board, N-1, 0, 1);
     set_cell(current_board, N-1, 1, 1);
 }
-
+#endif
 
 static void print_board(board_t board) {
     for (int row = 0; row < N; ++row) {
