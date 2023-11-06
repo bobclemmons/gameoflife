@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 // https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
 
@@ -16,7 +15,11 @@
 // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
 
 
-enum { N = 8 };
+enum { 
+    N =8,
+    ALIVE = 1,
+    DEAD = 0
+};
 
 typedef char board_t[N][N]; // Square board excatly 8x8 with toroidal topology
 
@@ -88,7 +91,7 @@ static void test_board() {
 static void print_board(board_t board) {
     for (int row = 0; row < N; ++row) {
         for (int col = 0; col < N; ++col) {
-           printf("%c", life_cell(board, row, col) ? 'X' : '.');
+           printf("%c", life_cell(board, row, col) == ALIVE ? 'X' : '.');
         }
         printf("\n");
     }
@@ -97,7 +100,7 @@ static void print_board(board_t board) {
 
 // find the 8 neighbors of a cell and return the number of live neighbors
 // use torroidal topology (e.g. row above 0 is at row N-1,  row below N-1 is at row 0)
-static int live_neighbors(int row, int columnn, int total_rows, int total_colunmns) {
+static int live_neighbors(board_t board, int row, int columnn, int total_rows, int total_colunmns) {
     typedef struct offset_s {
         int r;
         int c;
@@ -108,46 +111,47 @@ static int live_neighbors(int row, int columnn, int total_rows, int total_colunm
     for (int i = 0; i < 8; i++) {
         int r = ((row + offsets[i].r + total_rows)) % total_rows;
         int c = (columnn + offsets[i].c + total_colunmns) % total_colunmns; 
-        if (life_cell(current_board, r, c) == 1) {
+        if (life_cell(board, r, c) == ALIVE) {
             ++num_alive;
         }
     }
     return num_alive;
 };
 
-static void generation() {
+static void generation(board_t from_board, board_t to_board) {
     for (int row = 0; row < N; ++row) {
         for (int col = 0; col < N; ++col) {
-            int numNeighbors = live_neighbors(row, col, N, N);
+            int numNeighbors = live_neighbors(from_board, row, col, N, N);
             // Any live cell with fewer than two live neighbours dies, as if by underpopulation.
             if (numNeighbors < 2) {
-                set_cell(next_board, row, col, false);
+                set_cell(to_board, row, col, DEAD);
             } else if (numNeighbors == 2) {
-                set_cell(next_board, row, col, life_cell(current_board, row, col));
+                set_cell(to_board, row, col, life_cell(from_board, row, col));
             } else if (numNeighbors == 3) {
-                set_cell(next_board, row, col, true);
+                set_cell(to_board, row, col, ALIVE);
             } else if (numNeighbors > 3) {
-                set_cell(next_board, row, col, false);
+                set_cell(to_board, row, col, DEAD);
             }
         }
     }
 }
 
-
-
-
-
+/* 
+* Initialize the current board with the given pattern
+*/
 static void init(const char* pattern) {
-    if (strcasecmp(pattern, "blinker") == 0) {
+    if (!strcasecmp(pattern, "blinker")) {
         blinker();
-    } else if (strcasecmp(pattern, "toad") == 0) {
+    } else if (!strcasecmp(pattern, "toad")) {
         toad();
-    } else if (strcasecmp(pattern, "beacon") == 0) {
+    } else if (!strcasecmp(pattern, "beacon")) {
         beacon();
-    } else if (strcasecmp(pattern, "random") == 0) {
+    } else if (!strcasecmp(pattern, "random")) {
         random_board();  // generate a random board
-    } else if (strcasecmp(pattern, "test") == 0) {
+#ifdef TESTING
+    } else if (!strcasecmp(pattern, "test")) {
         test_board();  // for testing
+#endif
     } else {
         printf("Unknown pattern: %s\n", pattern);
         exit(1);
@@ -155,21 +159,37 @@ static void init(const char* pattern) {
 
 }
 
+static void run() {
+    // pointers to boards so we can swap without copying
+    board_t *b1 = &current_board;
+    board_t *b2 = &next_board;
+
+    print_board(*b1);
+    printf("\n");
+    for (int i = 0; i < 3; ++i) {
+        generation(*b1, *b2);
+        print_board(*b2);
+        printf("\n");
+        // swap boards
+        board_t *tmp = b1;
+        b1 = b2;
+        b2 = tmp;
+    }
+}
+
+
 int main(int argc, const char* argv[]) {
+#ifndef TESTING
     if (argc < 2) {
         printf("Usage: %s <pattern>\n", argv[0]);
         exit(1);
     }
+    // initialize current board
     init(argv[1]);
-    print_board(current_board);
-    printf("\n");
-    for (int i = 0; i < 3; ++i) {
-        generation();
-        print_board(next_board);
-        printf("\n");
-        memcpy(current_board, next_board, sizeof(current_board));
-    }
-
+#else
+    init("test");  // for now, just manually testing
+#endif
+    // exercise the generation for some cycles
+    run();
     return 0;
 }
-
